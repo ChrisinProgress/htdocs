@@ -34,6 +34,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 header("Location: /qm/dashboards/admin.php");
             } elseif ($user["role"] === "dentist") {
                 header("Location: /qm/dashboards/dentist.php");
+            } elseif ($user["role"] === "receptionist") {
+                header("Location: /qm/dashboards/receptionist.php");
             } else {
                 header("Location: /qm/dashboards/patient.php");
             }

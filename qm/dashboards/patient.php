@@ -71,7 +71,7 @@ $fallbackServiceImg = "teeth_icon.png";
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Patient Dashboard - ZNS Demtal Clinic</title>
+  <title>Patient Dashboard - ZNS Dental Clinic</title>
   <link rel="stylesheet" href="/qm/assets/css/style.css">
 </head>
 <body>

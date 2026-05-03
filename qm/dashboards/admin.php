@@ -170,7 +170,33 @@ try {
 } catch (Exception $e) {
     // transactions table may not exist — leave empty
 }
+$incomeByDentist = [];
+try {
+  $stmt = $conn->prepare("
+    SELECT
+      d.id AS dentist_id,
+      d.name AS dentist_name,
+      COALESCE(SUM(t.amount), 0) AS total_income,
+      COUNT(DISTINCT a.id) AS total_appointments,
+      COUNT(DISTINCT a.patient_id) AS unique_patients
+    FROM users d
+    LEFT JOIN appointments a ON a.dentist_id = d.id
+    LEFT JOIN transactions t
+      ON t.appointment_id = a.id
+     AND t.type = 'payment'
+     AND t.status = 'success'
+    WHERE d.role = 'dentist'
+    GROUP BY d.id, d.name
+    ORDER BY total_income DESC, total_appointments DESC
+  ");
+  $stmt->execute();
+  $incomeByDentist = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+} catch (Exception $e) {
+  $incomeByDentist = [];
+}
 ?>
+
+
 <!doctype html>
 <html>
 <head>
@@ -185,6 +211,54 @@ try {
     <div class="pageHead">
       <h1 class="pageHead__title">Welcome Back Admin <?php echo h($user["name"] ?? ""); ?>!</h1>
     </div>
+    <?php $showApptPopup = ($pendingApprovals > 0 || $todayAppointments > 0); ?>
+<?php if ($showApptPopup): ?>
+  <div id="apptModalOverlay" style="position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; z-index:9999;"></div>
+  <div id="apptModal" style="position:fixed; left:50%; top:16%; transform:translateX(-50%); width:min(520px, 92vw);
+    background:#fff; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.25); display:none; z-index:10000;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+      <div>
+        <div style="font-weight:1000; font-size:18px; color:#0b2f4f;">Today’s Summary</div>
+        <div style="font-weight:800; opacity:.75; margin-top:2px;">Appointments & approvals</div>
+      </div>
+      <button type="button" id="apptModalClose" class="btn" style="background:#eef3f7;">Close</button>
+    </div>
+
+    <div style="display:grid; gap:10px; margin-top:12px;">
+      <div class="card" style="background:#e9f7ff; margin:0; font-weight:900;">
+        📋 Today's Appointments: <?php echo h($todayAppointments); ?>
+      </div>
+      <div class="card" style="background:#fff3d6; margin:0; font-weight:900;">
+        ⏳ Pending Approvals: <?php echo h($pendingApprovals); ?>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+      <a class="btn btn--dark" href="/qm/pages/admin/appointments.php">Open Appointments</a>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const overlay = document.getElementById('apptModalOverlay');
+    const modal = document.getElementById('apptModal');
+    const closeBtn = document.getElementById('apptModalClose');
+    if (!overlay || !modal || !closeBtn) return;
+
+    function close(){
+      overlay.style.display = 'none';
+      modal.style.display = 'none';
+    }
+    overlay.addEventListener('click', close);
+    closeBtn.addEventListener('click', close);
+
+    overlay.style.display = 'block';
+    modal.style.display = 'block';
+  })();
+  </script>
+  <?php endif; ?>
+
+    
 
 
 
@@ -266,6 +340,33 @@ try {
     </section>
 
     <!-- Recent Transactions -->
+     <section class="card" style="background:#e9f7ff; margin-top:14px;">
+  <div class="adminTransactions__head">
+    <h2 class="adminTransactions__title">Income per Dentist</h2>
+  </div>
+
+  <?php if (!$incomeByDentist): ?>
+    <div style="padding:14px; font-weight:800; opacity:.8;">No dentist income data yet.</div>
+  <?php else: ?>
+    <div class="table">
+      <div class="table__row table__row--head" style="grid-template-columns: 1.1fr .8fr .7fr .7fr;">
+        <div>Dentist</div>
+        <div style="text-align:right;">Income</div>
+        <div style="text-align:right;">Appointments</div>
+        <div style="text-align:right;">Patients</div>
+      </div>
+
+      <?php foreach ($incomeByDentist as $d): ?>
+        <div class="table__row" style="grid-template-columns: 1.1fr .8fr .7fr .7fr;">
+          <div style="font-weight:900; color:#0b2f4f;"><?php echo h($d['dentist_name']); ?></div>
+          <div class="table__right" style="font-weight:900;">₱<?php echo number_format((float)$d['total_income'], 2); ?></div>
+          <div class="table__right" style="font-weight:900;"><?php echo (int)$d['total_appointments']; ?></div>
+          <div class="table__right" style="font-weight:900;"><?php echo (int)$d['unique_patients']; ?></div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</section>
     <section class="card adminTransactions">
       <div class="adminTransactions__head">
         <h2 class="adminTransactions__title">Recent Transactions</h2>

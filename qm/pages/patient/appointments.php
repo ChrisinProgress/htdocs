@@ -56,16 +56,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && empty($_POST["action"])) {
   if ($time === "")     $errors[] = "Time is required.";
 
   if (!$errors) {
-    date_default_timezone_set('Asia/Manila');
-    $today = date('Y-m-d');
-    $nowHM = date('H:i');
+  date_default_timezone_set('Asia/Manila');
 
-    if ($date < $today) {
-      $errors[] = "You cannot book an appointment in the past.";
-    } elseif ($date === $today && $time <= $nowHM) {
-      $errors[] = "You cannot book a past time for today.";
+  $bufferMinutes = 15;
+  $today = date('Y-m-d');
+
+  if ($date < $today) {
+    $errors[] = "You cannot book an appointment in the past.";
+  } else {
+    $apptTs = strtotime($date . ' ' . $time);
+    $minTs = time() + ($bufferMinutes * 60);
+
+    if ($apptTs === false) {
+      $errors[] = "Invalid appointment date/time.";
+    } elseif ($date === $today && $apptTs <= $minTs) {
+      $errors[] = "For today, please choose a time at least {$bufferMinutes} minutes from now.";
     }
   }
+}
 
   // Only INSERT if there are still no errors
   if (!$errors) {
@@ -143,7 +151,7 @@ $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <label>
           <div style="font-weight:900; color:#0b2f4f; margin-bottom:6px;">Date</div>
-          <input type="date" id="apptDate" name="appointment_date" requiredmin="<?php echo date('Y-m-d'); ?>"
+          <input type="date" id="apptDate" name="appointment_date" required min="<?php echo date('Y-m-d'); ?>"
             style="width:100%; padding:10px; border-radius:12px; border:1px solid rgba(11,31,42,.15);">
         </label>
 
@@ -213,18 +221,24 @@ $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
   const t = document.getElementById('apptTime');
   if (!d || !t) return;
 
+  const BUFFER_MINUTES = 15;
+
   function pad(n){ return String(n).padStart(2,'0'); }
-  function nowHM(){
+
+  function todayStr() {
     const x = new Date();
+    return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+  }
+
+  function nowPlusBufferHM() {
+    const x = new Date();
+    x.setMinutes(x.getMinutes() + BUFFER_MINUTES);
     return `${pad(x.getHours())}:${pad(x.getMinutes())}`;
   }
 
   function updateMinTime() {
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
-
-    if (d.value === todayStr) {
-      t.min = nowHM();      // optional buffer can be applied here
+    if (d.value === todayStr()) {
+      t.min = nowPlusBufferHM();
     } else {
       t.min = "";
     }

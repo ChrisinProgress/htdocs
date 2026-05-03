@@ -43,6 +43,11 @@ function active_class(string $key, string $active): string {
       <a class="sidebar__link<?php echo active_class("location", $active); ?>" href="/qm/pages/patient/location.php">Location &amp; Map</a>
       <a class="sidebar__link<?php echo active_class("settings", $active); ?>" href="/qm/pages/patient/settings.php">Settings</a>
 
+      <?php elseif ($role === "receptionist"): ?>
+      <a class="sidebar__link<?php echo active_class("dashboard", $active); ?>" href="/qm/dashboards/receptionist.php">Dashboard</a>
+      <a class="sidebar__link<?php echo active_class("transactions", $active); ?>" href="/qm/pages/receptionist/transactions.php">Transactions</a>
+       <?php elseif ($role === "patient"): ?>
+
     <?php else: ?>
       <?php http_response_code(403); die("Forbidden"); ?>
     <?php endif; ?>

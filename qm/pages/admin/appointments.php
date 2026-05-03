@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . "/../../auth.php";
-$user = require_role(["admin","staff"]);
+$user = require_role(["admin"]);
 $role = $user["role"];
 $active = "appointments";
 
@@ -55,9 +55,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       $stmt->bind_param("ii", $dentist_id, $id);
       $stmt->execute();
     } else {
-      $stmt = $conn->prepare("UPDATE appointments SET status='declined' WHERE id=?");
-      $stmt->bind_param("i", $id);
-      $stmt->execute();
+      $reason = trim($_POST["decline_reason"] ?? "");
+    if ($reason === "") {
+      header("Location: /qm/pages/admin/appointments.php?err=decline_reason_required");
+      exit;
+    }
+    $now = date('Y-m-d H:i:s');
+    $stmt = $conn->prepare("UPDATE appointments SET status='declined', decline_reason=?, declined_at=? WHERE id=?");
+    $stmt->bind_param("ssi", $reason, $now, $id);
+    $stmt->execute();
     }
   }
 
@@ -105,6 +111,12 @@ $err = $_GET["err"] ?? "";
     <div class="card" style="background:#ffe9e9; margin-bottom:12px; font-weight:800;">
       Please choose a dentist before approving.
     </div>
+  <?php endif; ?>
+
+  <?php if ($err === "decline_reason_required"): ?>
+  <div class="card" style="background:#ffe9e9; margin-bottom:12px; font-weight:800;">
+    Please provide a decline reason.
+  </div>
   <?php endif; ?>
 
   <section class="card" style="background:#e9f7ff;">
@@ -183,7 +195,20 @@ $err = $_GET["err"] ?? "";
                 </select>
 
                 <button class="btn btn--dark" name="action" value="approve" type="submit">Approve</button>
-                <button class="btn" style="background:#e64545;color:#fff;" name="action" value="decline" type="submit">Decline</button>
+                <input type="hidden" name="decline_reason" value="">
+                <button
+                  class="btn"
+                  style="background:#e64545;color:#fff;"
+                  name="action"
+                  value="decline"
+                  type="submit"
+                  onclick="
+                    var r = prompt('Reason for declining this appointment?');
+                    if (!r || !r.trim()) { alert('Decline reason is required.'); return false; }
+                    this.form.querySelector('input[name=decline_reason]').value = r.trim();
+                    return true;
+                  "
+                >Decline</button>
               </form>
             <?php else: ?>
               <div style="font-weight:900;"><?php echo h($r["status"]); ?></div>

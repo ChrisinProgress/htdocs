@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . "/../../auth.php";
-$user = require_role(["admin","staff"]);
+$user = require_role(["admin"]);
 $role = $user["role"];
 $active = "dental-records";
 

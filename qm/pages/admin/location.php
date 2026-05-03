@@ -4,7 +4,7 @@ require_once __DIR__ . "/../../auth.php";
 require_once __DIR__ . "/../../db.php";
 
 // allow dentists too; change if you want admin-only
-$user = require_role(["admin","staff","dentist","patient"]);
+$user = require_role(["admin"]);
 $role = $user["role"];
 $active = "location";
 

@@ -58,19 +58,50 @@ $records = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
   <section class="card" style="background:#e9f7ff;">
     <div class="table">
-      <div class="table__row table__row--head" style="grid-template-columns: 1.2fr .9fr .9fr;">
-        <div>Service / Dentist</div>
-        <div>Date/Time</div>
-        <div style="text-align:right;">Created</div>
-      </div>
+    <div class="table__row table__row--head" style="grid-template-columns: 1.2fr .9fr .6fr .7fr;">
+      <div>Service / Dentist</div>
+      <div>Date/Time</div>
+      <div style="text-align:right;">Created</div>
+      <div style="text-align:right;">Action</div>
+    </div>
 
       <?php foreach ($records as $r): ?>
-        <div class="table__row" style="grid-template-columns: 1.2fr .9fr .9fr;">
-          <div>
-            <div style="font-weight:900; color:#0b2f4f;"><?php echo h($r["service"]); ?></div>
-            <div style="font-size:12px; font-weight:900; opacity:.75;">
-              Dentist: <?php echo h($r["dentist_name"] ?: "—"); ?>
-            </div>
+      <div class="table__row" style="grid-template-columns: 1.2fr .9fr .6fr .7fr;">
+      <div>
+        <div style="font-weight:900; color:#0b2f4f;"><?php echo h($r["service"]); ?></div>
+        <div style="font-size:12px; font-weight:900; opacity:.75;">
+          Dentist: <?php echo h($r["dentist_name"] ?: "—"); ?>
+        </div>
+
+        <?php if (!empty($r["diagnosis"])): ?>
+          <div style="margin-top:6px; font-weight:800; opacity:.75;">
+            <b>Dx:</b> <?php echo h($r["diagnosis"]); ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if (!empty($r["treatment"])): ?>
+          <div style="margin-top:6px; font-weight:800; opacity:.75;">
+            <b>Tx:</b> <?php echo h($r["treatment"]); ?>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <div class="table__muted">
+        <?php echo h($r["appointment_date"]); ?> <?php echo h(substr($r["appointment_time"], 0, 5)); ?>
+      </div>
+
+      <div class="table__right" style="font-weight:900;">
+        <?php echo h(date("Y-m-d", strtotime($r["created_at"]))); ?>
+      </div>
+
+      <div class="table__right">
+        <a class="btn"
+          href="/qm/pages/patient/print_dental_record.php?id=<?php echo (int)$r['id']; ?>"
+          target="_blank" rel="noopener">
+          View / Print
+        </a>
+      </div>
+    </div>
 
             <?php if (!empty($r["diagnosis"])): ?>
               <div style="margin-top:6px; font-weight:800; opacity:.75;">
